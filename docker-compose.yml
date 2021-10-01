@@ -1,0 +1,7 @@
+﻿version: "3.9"
+services:
+  greenery:
+    build: .
+    volumes:
+      - /volume/data:/App/data
+      - /volume/storage:/App/storage
