@@ -10,21 +10,22 @@ namespace GreeneryBOT.Models {
         static public string SeedlingImage = ":seedling:";
         static public string WitheredImage = ":wilted_rose:";
 
-        static public int TimePerTick = 10;
+        static public int TimePerTick = 1;
 
-        public PlantVariety Variety;
+        public ulong VarietyId;
         public int AliveTime;
         public PlantState State;
 
-        public Plant(PlantVariety variety) {
-            Variety = variety;
+        public Plant(ulong varietyId) {
+            VarietyId = varietyId;
             AliveTime = 0;
             State = PlantState.SEED;
         }
 
         public override void DoTick() {
             int calculatedTimePerTick = (int) (TimePerTick * SpeedFertilizerLevel);
-            WaterLevel -= Variety.WaterConsumption;
+            PlantVariety variety = PlantVariety.GetById(VarietyId);
+            WaterLevel -= variety.WaterConsumption;
             if (WaterLevel < 0)
                 WaterLevel = 0;
 
@@ -49,11 +50,12 @@ namespace GreeneryBOT.Models {
         }
 
         private void CheckState() {
-            if (State == PlantState.SEED && AliveTime > Variety.TimeToSprout)
+            PlantVariety variety = PlantVariety.GetById(VarietyId);
+            if (State == PlantState.SEED && AliveTime > variety.TimeToSprout)
                 State = PlantState.SEEDLING;
-            else if (State == PlantState.SEEDLING && AliveTime > Variety.TimeToMature)
+            else if (State == PlantState.SEEDLING && AliveTime > variety.TimeToMature)
                 State = PlantState.MATURE;
-            else if (State == PlantState.MATURE && AliveTime > Variety.TimeToWither)
+            else if (State == PlantState.MATURE && AliveTime > variety.TimeToWither)
                 State = PlantState.WITHERED;
         }
 
@@ -66,11 +68,12 @@ namespace GreeneryBOT.Models {
                 case PlantState.SEEDLING:
                     return SeedlingImage;
                 case PlantState.MATURE:
-                    return Variety.Image;
+                    PlantVariety variety = PlantVariety.GetById(VarietyId);
+                    return variety.Image;
                 case PlantState.WITHERED:
                     return WitheredImage;
             }
-            return Variety.Image;
+            return DefaultInfestedImage;
         }
     }
 }

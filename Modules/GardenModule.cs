@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace GreeneryBOT.Modules {
     public class GardenModule : BaseCommandModule {
+        static private Dictionary<ulong, Queue<string>> _harvestHistory = new Dictionary<ulong, Queue<string>>();
 
         //TODO: All these methods seems to do the same. Move logic to previous function and only call _build message for each if
         static public void ProcessInteraction(DiscordClient d, ComponentInteractionCreateEventArgs e, string[] args, DiscordMember member) {
@@ -150,8 +151,9 @@ namespace GreeneryBOT.Modules {
                 List<DiscordComponent> components = new List<DiscordComponent>();
                 for (int i = 0; i < seedsAvailable.Count && i < 50; i++) {
                     InventoryItem ii = seedsAvailable[i];
-                    components.Add(new DiscordButtonComponent(ButtonStyle.Success, $"garden_start-sow_{memberId}_{ii.Item.Id}", $"{ii.Item.Name} - x{ii.Quantity}",
-                            false, new DiscordComponentEmoji(DiscordEmoji.FromName(Client.Instance, ii.Item.Image))));
+                    Item item = ItemSeed.GetById(ii.ItemId);
+                    components.Add(new DiscordButtonComponent(ButtonStyle.Success, $"garden_start-sow_{memberId}_{item.Id}", $"{item.Name} - x{ii.Quantity}",
+                            false, new DiscordComponentEmoji(DiscordEmoji.FromName(Client.Instance, item.Image))));
                     if ((i + 1) % 5 == 0) {
                         msgBuilder.AddComponents(components.ToArray());
                         components.Clear();
@@ -168,7 +170,7 @@ namespace GreeneryBOT.Modules {
             Item item = Item.GetById(seedItemId);
             InventoryItem ii = g.Inventory.GetByItem(item);
             if (ii == null)
-                ii = new InventoryItem(item, 0);
+                ii = new InventoryItem(item.Id, 0);
 
             string content = $"{g.Name} - {DiscordUtils.Emoji(":inbox_tray:")} **Sowing seeds** - *Click on an empty tile to plant*\n" +
                 $"**Selected seed**: {DiscordUtils.Emoji(item.Image)} {item.Name} - Remaining: {ii.Quantity}";
@@ -233,8 +235,9 @@ namespace GreeneryBOT.Modules {
                 List<DiscordComponent> components = new List<DiscordComponent>();
                 for (int i = 0; i < fertilizersAvailable.Count && i < 50; i++) {
                     InventoryItem ii = fertilizersAvailable[i];
-                    components.Add(new DiscordButtonComponent(ButtonStyle.Primary, $"garden_start-fertilize_{memberId}_{ii.Item.Id}", $"{ii.Item.Name} - x{ii.Quantity}",
-                            false, new DiscordComponentEmoji(DiscordEmoji.FromName(Client.Instance, ii.Item.Image))));
+                    Item item = Item.GetById(ii.ItemId);
+                    components.Add(new DiscordButtonComponent(ButtonStyle.Primary, $"garden_start-fertilize_{memberId}_{item.Id}", $"{item.Name} - x{ii.Quantity}",
+                            false, new DiscordComponentEmoji(DiscordEmoji.FromName(Client.Instance, item.Image))));
                     if ((i + 1) % 5 == 0) {
                         msgBuilder.AddComponents(components.ToArray());
                         components.Clear();
@@ -251,7 +254,7 @@ namespace GreeneryBOT.Modules {
             Item item = Item.GetById(fertilizerItemId);
             InventoryItem ii = g.Inventory.GetByItem(item);
             if (ii == null)
-                ii = new InventoryItem(item, 0);
+                ii = new InventoryItem(item.Id, 0);
 
             string content = $"{g.Name} - {DiscordUtils.Emoji(":sparkles:")} **Fertilize** - *Click on an empty tile to fertilize*\n" +
                 $"**Selected fertilizer**: {DiscordUtils.Emoji(item.Image)} {item.Name} - Remaining: {ii.Quantity}";
@@ -305,7 +308,19 @@ namespace GreeneryBOT.Modules {
         }
 
         static private DiscordMessageBuilder _buildHarvestMessage(Garden g, ulong memberId) {
-            string content = $"{g.Name} - {DiscordUtils.Emoji(":outbox_tray:")} **Harvest** - *Click on a mature plant to harvest*\n";
+            string content = $"{DiscordUtils.Emoji(":seedling:")} **{g.Name}** - {DiscordUtils.Emoji(":outbox_tray:")} **Harvest** - *Click on a mature plant to harvest*\n";
+            
+            Queue<string> _userHarvest = _harvestHistory.GetValueOrDefault(memberId);
+            if (_userHarvest == null) {
+                _userHarvest = new Queue<string>();
+                _harvestHistory.Add(memberId, _userHarvest);
+            }
+
+            if (_userHarvest.Count > 0)
+                content += $"{DiscordUtils.Emoji(":basket:")} **Harvest record**\n";
+            foreach (string s in _userHarvest)
+                content += s;
+
             var msgBuilder = new DiscordMessageBuilder()
                 .WithContent(content);
             List<DiscordComponent> components = new List<DiscordComponent>();
@@ -392,8 +407,19 @@ namespace GreeneryBOT.Modules {
             Garden g = Garden.Get(e.Guild.Id, e.User.Id, member.DisplayName);
             int level = g.Level;
             if (g.Harvest(row, column, out int moneyWon, out int expWon, out Plant harvested)) {
-                _ = e.Message.RespondAsync($"{member.DisplayName}, you've harvested {DiscordUtils.Emoji(harvested.GetImage())} {harvested.Variety.Name} " +
-                    $"and obtained {moneyWon} {DiscordUtils.Emoji(":moneybag:")} and {expWon} EXP {DiscordUtils.Emoji(":arrow_up:")}");
+                PlantVariety variety = PlantVariety.GetById(harvested.VarietyId);
+
+                Queue<string> _userHarvest = _harvestHistory.GetValueOrDefault(member.Id);
+                if (_userHarvest == null) {
+                    _userHarvest = new Queue<string>();
+                    _harvestHistory.Add(member.Id, _userHarvest);
+                }
+
+                _userHarvest.Enqueue($"You harvested {DiscordUtils.Emoji(harvested.GetImage())} {variety.Name} " +
+                    $"obtaining {moneyWon} {DiscordUtils.Emoji(":moneybag:")} and {expWon} EXP {DiscordUtils.Emoji(":arrow_up:")}\n");
+                if (_harvestHistory.Count > 3)
+                    _userHarvest.Dequeue();
+
                 if (g.Level > level) {
                     _ = e.Message.RespondAsync($"{member.DisplayName} your farm just **leveled up to {g.Level}** {DiscordUtils.Emoji(":tada:")}");
                 }

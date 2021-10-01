@@ -9,7 +9,7 @@ using System.Text;
 
 namespace GreeneryBOT.Utilities {
     public class SoftStorage {
-        static private string _workingDirectory = Environment.CurrentDirectory;
+        static private string _workingDirectory = Environment.CurrentDirectory + "/storage";
         static private JsonSerializerSettings settings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.All };
 
         static public Dictionary<ulong, DiscordMessage> MessageTrack = new Dictionary<ulong, DiscordMessage>();
@@ -20,7 +20,8 @@ namespace GreeneryBOT.Utilities {
 
         static public void Load() {
             Console.WriteLine("[Storage] Loading data from files");
-            
+            Directory.CreateDirectory(_workingDirectory);
+
             //TODO: Do generic method for generic types <T>
             try {
                 string json = File.ReadAllText(_workingDirectory + "/JoinedServers.txt");

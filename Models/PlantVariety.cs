@@ -8,6 +8,7 @@ namespace GreeneryBOT.Models {
     public class PlantVariety {
         static private List<PlantVariety> _varieties;
 
+        public ulong Id;
         public string Name;
         public int WaterConsumption;
         public int TimeToSprout;
@@ -20,8 +21,16 @@ namespace GreeneryBOT.Models {
 
         public PlantVariety() { }
 
+        static public PlantVariety GetById(ulong id) {
+            return All().FirstOrDefault(x => x.Id == id);
+        }
+
         static public PlantVariety GetByName(string name) {
             return All().FirstOrDefault(x => x.Name == name);
+        }
+
+        static public void SetAll(List<PlantVariety> varieties) {
+            _varieties = varieties;
         }
 
         static public IEnumerable<PlantVariety> All() {
@@ -32,11 +41,12 @@ namespace GreeneryBOT.Models {
 
         static private IEnumerable<PlantVariety> _all(){
             yield return new PlantVariety {
+                Id = 1,
                 Name = "Lettuce",
                 WaterConsumption = 1,
-                TimeToSprout = 30,
-                TimeToMature = 90,
-                TimeToWither = 180,
+                TimeToSprout = 3,
+                TimeToMature = 9,
+                TimeToWither = 18,
                 PreferedSeason = Seasons.WINTER,
                 MoneyWorth = 150,
                 ExperienceWorth = 100,
@@ -44,11 +54,12 @@ namespace GreeneryBOT.Models {
             };
 
             yield return new PlantVariety {
+                Id = 2,
                 Name = "Carrot",
                 WaterConsumption = 2,
-                TimeToSprout = 50,
-                TimeToMature = 120,
-                TimeToWither = 360,
+                TimeToSprout = 5,
+                TimeToMature = 12,
+                TimeToWither = 36,
                 PreferedSeason = Seasons.SPRING,
                 MoneyWorth = 100,
                 ExperienceWorth = 150,
@@ -56,11 +67,12 @@ namespace GreeneryBOT.Models {
             };
 
             yield return new PlantVariety {
+                Id = 3,
                 Name = "Onion",
                 WaterConsumption = 3,
-                TimeToSprout = 60,
-                TimeToMature = 160,
-                TimeToWither = 360,
+                TimeToSprout = 6,
+                TimeToMature = 16,
+                TimeToWither = 36,
                 PreferedSeason = Seasons.SPRING,
                 MoneyWorth = 125,
                 ExperienceWorth = 200,
@@ -68,11 +80,12 @@ namespace GreeneryBOT.Models {
             };
 
             yield return new PlantVariety {
+                Id = 4,
                 Name = "Potato",
                 WaterConsumption = 1,
-                TimeToSprout = 30,
-                TimeToMature = 90,
-                TimeToWither = 90,
+                TimeToSprout = 3,
+                TimeToMature = 9,
+                TimeToWither = 9,
                 PreferedSeason = Seasons.SUMMER,
                 MoneyWorth = 100,
                 ExperienceWorth = 175,
@@ -80,11 +93,12 @@ namespace GreeneryBOT.Models {
             };
 
             yield return new PlantVariety {
+                Id = 5,
                 Name = "Tomato",
                 WaterConsumption = 2,
-                TimeToSprout = 40,
-                TimeToMature = 90,
-                TimeToWither = 240,
+                TimeToSprout = 4,
+                TimeToMature = 9,
+                TimeToWither = 24,
                 PreferedSeason = Seasons.SPRING,
                 MoneyWorth = 325,
                 ExperienceWorth = 300,

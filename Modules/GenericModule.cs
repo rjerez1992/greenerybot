@@ -37,6 +37,16 @@ namespace GreeneryBOT.Modules {
             }
         }
 
+        [Command("info"), Description("Shows information for Grennery")]
+        public async Task InfoCommand(CommandContext ctx) {
+            try {
+                await ctx.Channel.SendMessageAsync($"Made with {DiscordUtils.Emoji(":heart:")} by rjerez1992. Collab on https://github.com/rjerez1992/greenerybot");
+            }
+            catch (Exception ex) {
+                _ = ModuleUtils.SendAngLogException(ex, ctx.Message);
+            }
+        }
+
         static public void ProcessInteraction(DiscordClient d, ComponentInteractionCreateEventArgs e, string[] args, DiscordMember member) {
             if (args[1].Equals("guide"))
                 _ = ShowGuide(d, e, args, member);
@@ -48,10 +58,10 @@ namespace GreeneryBOT.Modules {
 
         static public async Task ShowGuide(DiscordClient d, ComponentInteractionCreateEventArgs e, string[] args, DiscordMember member) {
             try {
-                //Garden g = Garden.Get(e.Guild.Id, e.User.Id, member.DisplayName);
-                //DiscordMessage message = await _buildWaterMessage(g, member.Id).ModifyAsync(e.Message);
-                //await ModuleUtils.SetCloseBackMenuOption(g, message, member);
-                await new Task(() => { Console.WriteLine("Method not implemented yet"); });
+                Garden g = Garden.Get(e.Guild.Id, e.User.Id, member.DisplayName);
+                DiscordMessageBuilder msgBuilder = _buildGuideMessage();
+                _ = ModuleUtils.SetCloseBackMenuOption(g, e.Message, member);
+                await msgBuilder.ModifyAsync(e.Message);
             }
             catch (Exception ex) {
                 _ = ModuleUtils.SendAngLogException(ex, e.Message);
@@ -92,6 +102,24 @@ namespace GreeneryBOT.Modules {
                         false, new DiscordComponentEmoji(DiscordEmoji.FromName(Client.Instance, ":handbag:"))));
 
             msgBuilder.AddComponents(components.ToArray());
+            return msgBuilder;
+        }
+
+        static private DiscordMessageBuilder _buildGuideMessage() {
+            string content = $"{DiscordUtils.Emoji(":book:")} **Guide**\n" +
+                $"*Start by using the menu with **!g-menu**. This will allow you to access all features.*\n" +
+                $"{DiscordUtils.Emoji(":shopping_cart:")} Buy **seeds** from the **shop** and then **sow** them\n" +
+                $"{DiscordUtils.Emoji(":farmer:")} While connected to any **voice-chat** your plants will grow\n" +
+                $"{DiscordUtils.Emoji(":droplet:")}  They'll need **water** and you may add **fertilizer** to improve growth\n" +
+                $"{DiscordUtils.Emoji(":outbox_tray:")} With time they'll **mature** and you will be able to harvest them for **money** and **exerience**\n" +
+                $"{DiscordUtils.Emoji(":wilted_rose:")}  If you let them too long they'll **wither** and will require **cleaning**\n" +
+                $"{DiscordUtils.Emoji(":cricket:")} **Pests** might attack your garden so ve ready to **clean** them as well\n" +
+                $"Keep an eye on **random events** that might occur\n";
+
+            var msgBuilder = new DiscordMessageBuilder()
+                .WithContent(content);
+            List<DiscordComponent> components = new List<DiscordComponent>();
+
             return msgBuilder;
         }
     }

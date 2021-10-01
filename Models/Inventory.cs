@@ -11,10 +11,10 @@ namespace GreeneryBOT.Models {
             Items = new List<InventoryItem>();
         }
 
-        public void Add(Item i, int quantity) {
-            InventoryItem ii = Items.FirstOrDefault(x => x.Item.Id == i.Id);
+        public void Add(ulong itemId, int quantity) {
+            InventoryItem ii = Items.FirstOrDefault(x => x.ItemId == itemId);
             if (ii == null) {
-                Items.Add(new InventoryItem(i, quantity));
+                Items.Add(new InventoryItem(itemId, quantity));
             }
             else {
                 ii.Quantity += quantity;
@@ -22,7 +22,7 @@ namespace GreeneryBOT.Models {
         }
 
         public bool RemoveOne(Item i) {
-            InventoryItem ii = Items.FirstOrDefault(x => x.Item.Id == i.Id);
+            InventoryItem ii = Items.FirstOrDefault(x => x.ItemId == i.Id);
             if (ii == null)
                 return false;
             ii.Quantity--;
@@ -32,24 +32,24 @@ namespace GreeneryBOT.Models {
         }
 
         public InventoryItem GetByItem(Item i) {
-            return Items.FirstOrDefault(x => x.Item.Id == i.Id);
+            return Items.FirstOrDefault(x => x.ItemId == i.Id);
         }
 
         public List<InventoryItem> GetSeeds() {
-            return Items.Where(x => x.Item is ItemSeed).ToList();
+            return Items.Where(x => Item.GetById(x.ItemId) is ItemSeed).ToList();
         }
 
         public List<InventoryItem> GetFertilizers() {
-            return Items.Where(x => x.Item is ItemFertilizer).ToList();
+            return Items.Where(x => Item.GetById(x.ItemId) is ItemFertilizer).ToList();
         }
     }
 
     public class InventoryItem {
-        public Item Item;
+        public ulong ItemId;
         public int Quantity;
 
-        public InventoryItem(Item i, int q) {
-            Item = i;
+        public InventoryItem(ulong itemId, int q) {
+            ItemId = itemId;
             Quantity = q;
         }
     }

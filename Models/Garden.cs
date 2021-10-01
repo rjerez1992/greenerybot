@@ -47,11 +47,18 @@ namespace GreeneryBOT.Models {
             }
         }
 
+        public void RainBless() {
+            foreach (GardenSlot gs in Slots) {
+                if (gs != null)
+                    gs.DoBless();
+            }
+        }
+
         public bool Plant(ulong seedId, int row, int col) {
             ItemSeed i = (ItemSeed) Item.GetById(seedId);
             GardenSlot gs = Slots[row, col];
             if (gs != null && Inventory.RemoveOne(i)) {
-                Plant p = new Plant(i.Variety);
+                Plant p = new Plant(i.Variety.Id);
                 p.SetValuesFrom(gs);
                 Slots[row, col] = p;
                 return true;
@@ -71,10 +78,11 @@ namespace GreeneryBOT.Models {
 
             Harvested = (Plant) Slots[row, col];
             Slots[row, col] = new GardenSlot();
-            AddExperience(Harvested.Variety.ExperienceWorth);
-            AddMoney(Harvested.Variety.MoneyWorth);
-            exp = Harvested.Variety.ExperienceWorth;
-            money = Harvested.Variety.MoneyWorth;
+            PlantVariety variety = PlantVariety.GetById(Harvested.VarietyId);
+            AddExperience(variety.ExperienceWorth);
+            AddMoney(variety.MoneyWorth);
+            exp = variety.ExperienceWorth;
+            money = variety.MoneyWorth;
             return true;
         }
 

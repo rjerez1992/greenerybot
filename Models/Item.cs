@@ -21,6 +21,10 @@ namespace GreeneryBOT.Models {
             return All().FirstOrDefault(x => x.Id == id);
         }
 
+        static public void SetAll(List<Item> items) {
+            _items = items;        
+        }
+
         static public List<Item> All() {
             if (_items == null)
                 _items = _all().ToList();

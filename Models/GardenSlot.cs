@@ -29,6 +29,12 @@ namespace GreeneryBOT.Models {
                 IsInfested = true;
         }
 
+        public virtual void DoBless() {
+            WaterLevel = Garden.BaseWateringValue * 3;
+            IsInfested = false;
+            SpeedFertilizerLevel = 2;
+        }
+
         public virtual string GetImage() {
             if (IsInfested)
                 return DefaultInfestedImage;

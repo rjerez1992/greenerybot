@@ -15,10 +15,21 @@ namespace GreeneryBOT.Models {
             return _shopItems.FirstOrDefault(x => x.Name == name);
         }
 
+        static public void SetAll(List<ShopItem> shopItems) {
+            _shopItems = shopItems;
+        }
+
         static public List<ShopItem> AllItems() {
             if (_shopItems == null)
                 _shopItems = _all().ToList();
             return _shopItems;
+        }
+
+        static public ShopItem GetRandom() {
+            if (_shopItems == null)
+                _shopItems = _all().ToList();
+            Random r = new Random();
+            return _shopItems[r.Next(_shopItems.Count)];
         }
 
         static public IEnumerable<ShopItem> _all() {
@@ -27,7 +38,7 @@ namespace GreeneryBOT.Models {
                 Name = "Garden expansion",
                 Image = ":golf:",
                 Description = "Increases garden spaces by 1. Maximum of 25 spaces",
-                Item = Item.GetById(1),
+                ItemId = 1,
                 ItemQuantity = 1,
             };
             yield return new ShopItem {
@@ -35,7 +46,7 @@ namespace GreeneryBOT.Models {
                 Name = "Speed fertilizer pack (x10)",
                 Image = ":oil:",
                 Description = "A pack of 10 speed fertilizers for your garden",
-                Item = Item.GetById(2),
+                ItemId = 2,
                 ItemQuantity = 10,
             };
             yield return new ShopItem {
@@ -43,7 +54,7 @@ namespace GreeneryBOT.Models {
                 Name = "Speed+ fertilizer pack (x10)",
                 Image = ":oil:",
                 Description = "A pack of 10 faster speed fertilizers for your garden",
-                Item = Item.GetById(3),
+                ItemId = 3,
                 ItemQuantity = 10,
             };
             yield return new ShopItem {
@@ -51,7 +62,7 @@ namespace GreeneryBOT.Models {
                 Name = "Lettuce seed pack (x10)",
                 Image = ":package:",
                 Description = "A pack of 10 lettuce seeds to grow in your garden",
-                Item = Item.GetById(4),
+                ItemId = 4,
                 ItemQuantity = 10,
             };
             yield return new ShopItem {
@@ -59,7 +70,7 @@ namespace GreeneryBOT.Models {
                 Name = "Carrot seed pack (x10)",
                 Image = ":package:",
                 Description = "A pack of 10 carrot seeds to grow in your garden",
-                Item = Item.GetById(5),
+                ItemId = 5,
                 ItemQuantity = 10,
             };
             yield return new ShopItem {
@@ -67,7 +78,7 @@ namespace GreeneryBOT.Models {
                 Name = "Onion seed pack (x10)",
                 Image = ":package:",
                 Description = "A pack of 10 onion seeds to grow in your garden",
-                Item = Item.GetById(6),
+                ItemId = 6,
                 ItemQuantity = 10,
             };
             yield return new ShopItem {
@@ -75,7 +86,7 @@ namespace GreeneryBOT.Models {
                 Name = "Potato seed pack (x10)",
                 Image = ":package:",
                 Description = "A pack of 10 potato seeds to grow in your garden",
-                Item = Item.GetById(7),
+                ItemId = 7,
                 ItemQuantity = 10,
             };
             yield return new ShopItem {
@@ -83,7 +94,7 @@ namespace GreeneryBOT.Models {
                 Name = "Tomato seed pack (x10)",
                 Image = ":package:",
                 Description = "A pack of 10 tomato seeds to grow in your garden",
-                Item = Item.GetById(8),
+                ItemId = 8,
                 ItemQuantity = 10,
             };
         }
@@ -94,21 +105,23 @@ namespace GreeneryBOT.Models {
         public string Name;
         public string Image;
         public string Description;
-        public Item Item;
+        public ulong ItemId;
         public int ItemQuantity;
 
         public int Price() {
-            return ItemQuantity * Item.PricePerUnit;
+            Item item = Item.GetById(ItemId);
+            return ItemQuantity * item.PricePerUnit;
         }
 
         public bool AddSingleTo(Garden g) {
-            if (Item.Type == ItemType.INSTANT) {
-                if (Item.Id == 1) {
+            Item item = Item.GetById(ItemId);
+            if (item.Type == ItemType.INSTANT) {
+                if (item.Id == 1) {
                     return g.AddSlot();
                 }
             }
             else {
-                g.Inventory.Add(Item, ItemQuantity);
+                g.Inventory.Add(item.Id, ItemQuantity);
                 return true;
             }
             return false;

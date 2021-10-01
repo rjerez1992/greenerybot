@@ -7,6 +7,7 @@ using DSharpPlus.Interactivity.Extensions;
 using GreeneryBOT.Models;
 using GreeneryBOT.Modules;
 using GreeneryBOT.Utilities;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -37,7 +38,8 @@ namespace GreeneryBOT {
         static private DiscordConfiguration ClientConfig() {
             return new DiscordConfiguration() {
                 Token = ConfigurationManager.AppSettings.Get("DiscordKey"),
-                TokenType = TokenType.Bot
+                TokenType = TokenType.Bot,
+                MinimumLogLevel = LogLevel.Critical
             };
         }
 
@@ -47,8 +49,6 @@ namespace GreeneryBOT {
             });
 
             commands.RegisterCommands<GenericModule>();
-            //commands.RegisterCommands<GardenModule>();
-            //commands.RegisterCommands<ShopModule>();
         }
 
         static private void _setupInteractivity() {
@@ -58,21 +58,29 @@ namespace GreeneryBOT {
             });
 
             Instance.ComponentInteractionCreated += async (s, e) => {
+                //NOTE: Remove for production builds
                 Console.WriteLine($"Button {e.Id} interacted by user {e.User.Id}");
 
-                string[] args = e.Id.Split("_");
-                DiscordMember member = e.Guild.GetMemberAsync(e.User.Id).Result;
-                if (ulong.Parse(args[2]) != member.Id)
-                    return;
-
-                if (args[0].Equals("generic"))
-                    GenericModule.ProcessInteraction(s, e, args, member);
-                else if (args[0].Equals("garden"))
-                    GardenModule.ProcessInteraction(s, e, args, member);
-                else if (args[0].Equals("shop"))
-                    ShopModule.ProcessInteraction(s, e, args, member);
-                else {
-                    Console.WriteLine($"[Interaction] Unknown interaction for {e.Id}");
+                try {
+                    string[] args = e.Id.Split("_");
+                    DiscordMember member = e.Guild.GetMemberAsync(e.User.Id).Result;
+                    if (ulong.Parse(args[2]) != member.Id && !args[0].Equals("event"))
+                        return;
+                    if (args[0].Equals("generic"))
+                        GenericModule.ProcessInteraction(s, e, args, member);
+                    else if (args[0].Equals("garden"))
+                        GardenModule.ProcessInteraction(s, e, args, member);
+                    else if (args[0].Equals("shop"))
+                        ShopModule.ProcessInteraction(s, e, args, member);
+                    else if (args[0].Equals("event"))
+                        EventModule.ProcessInteraction(s, e, args, member);
+                    else {
+                        Console.WriteLine($"[Interaction] Unknown interaction for {e.Id}");
+                    }
+                }
+                catch (Exception ex) {
+                    Console.WriteLine("Error");
+                    Console.WriteLine(ex.Message + ex.StackTrace);
                 }
 
                 await e.Interaction.CreateResponseAsync(InteractionResponseType.DeferredMessageUpdate);
@@ -83,16 +91,19 @@ namespace GreeneryBOT {
             Instance.GuildCreated += (dc, args) => {
                 Console.WriteLine($"[Event] Joined to new server - GID:{args.Guild}");
                 Server s = SoftStorage.JoinedServers.FirstOrDefault(x => x.GuildId == args.Guild.Id);
-                DiscordChannel chn;
-                if (s == null) {
-                    chn = args.Guild.CreateTextChannelAsync("greenery").Result;
-                }
-                else {
-                    chn = args.Guild.GetChannel(s.ChannelId);
-                }                
-                chn.SendMessageAsync($"{DiscordUtils.Emoji(":seedling:")} **Greenery is here!** Use *!g-help* to get information of the available commands");
+                if (s == null)
+                    RecordGuild(args.Guild);
                 return Task.CompletedTask;
             };
+        }
+
+        static public void RecordGuild(DiscordGuild dg) {
+            DiscordChannel chn = dg.Channels.Values.FirstOrDefault(x => x.Name == "greenery");
+            if (chn == null) {
+                chn = dg.CreateTextChannelAsync("greenery").Result;
+            }
+            SoftStorage.JoinedServers.Add(new Server(dg.Id, chn.Id));
+            chn.SendMessageAsync($"{DiscordUtils.Emoji(":seedling:")} **Greenery is here!** Use *!g-help* to get information of the available commands");
         }
     }
 }

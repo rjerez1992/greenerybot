@@ -14,6 +14,8 @@ using GreeneryBOT.Models;
 using GreeneryBOT.Utilities;
 
 public class ShopModule : BaseCommandModule {
+    static private Dictionary<ulong, Queue<string>> _purschaseHistory = new Dictionary<ulong, Queue<string>>();
+
     static public void ProcessInteraction(DiscordClient d, ComponentInteractionCreateEventArgs e, string[] args, DiscordMember member) {
         if (args[1].Equals("show"))
             _ = ShowShop(d, e, args, member);
@@ -30,6 +32,12 @@ public class ShopModule : BaseCommandModule {
     static public async Task ShowShop(DiscordClient d, ComponentInteractionCreateEventArgs e, string[] args, DiscordMember member) {
         try {
             Garden g = Garden.Get(e.Guild.Id, e.User.Id, member.DisplayName);
+            Queue<string> memberHistory = _purschaseHistory.GetValueOrDefault(member.Id);
+            if (memberHistory == null) {
+                memberHistory = new Queue<string>();
+                _purschaseHistory.Add(member.Id, memberHistory);
+            }
+            memberHistory.Clear();           
             DiscordMessage message = await _buildShopMessage(g, member.Id).ModifyAsync(e.Message);
             await ModuleUtils.SetCloseBackMenuOption(g, message, member);
         }
@@ -50,7 +58,14 @@ public class ShopModule : BaseCommandModule {
     }
 
     static private DiscordMessageBuilder _buildShopMessage(Garden g, ulong memberId) {
-        string content = $"{g.Name} - {DiscordUtils.Emoji(":shopping_cart:")} **Shop** - *Click on an item to buy*\n";
+        string content = $"{DiscordUtils.Emoji(":seedling:")} **{g.Name}** - {DiscordUtils.Emoji(":shopping_cart:")} **Shop** - *Click on an item to buy* - " +
+            $"{DiscordUtils.Emoji(":moneybag:")} {g.Money} money\n";
+
+        if (_purschaseHistory.Count > 0)
+            content += $"{DiscordUtils.Emoji(":shopping_bags:")} **Purschase record**\n";
+        foreach (string s in _purschaseHistory.GetValueOrDefault(memberId))
+            content += s;
+
         var msgBuilder = new DiscordMessageBuilder()
             .WithContent(content);
 
@@ -79,8 +94,9 @@ public class ShopModule : BaseCommandModule {
    
         for (int i = 0; i < g.Inventory.Items.Count; i++) {
             InventoryItem ii = g.Inventory.Items[i];
-            content += $"\n> {DiscordUtils.Emoji(ii.Item.Image)} **{ii.Item.Name}** - x{ii.Quantity}\n" +
-                $"> {ii.Item.Description}";
+            Item item = Item.GetById(ii.ItemId);
+            content += $"\n> {DiscordUtils.Emoji(item.Image)} **{item.Name}** - x{ii.Quantity}\n" +
+                $"> {item.Description}";
         }
 
         if (g.Inventory.Items.Count <= 0) {
@@ -99,8 +115,11 @@ public class ShopModule : BaseCommandModule {
         if (g.Money >= si.Price()) {
             if (si.AddSingleTo(g)) {
                 g.Money -= si.Price();
-                await e.Message.RespondAsync($"{DiscordUtils.Emoji(":shopping_cart:")} **{member.DisplayName}** just bought {si.Name}. " +
-                    $"Remaining {DiscordUtils.Emoji(":moneybag:")} {g.Money}");
+                Queue<string> memberHistory = _purschaseHistory.GetValueOrDefault(member.Id);
+                memberHistory.Enqueue($"{DiscordUtils.Emoji(":small_blue_diamond:")} You bought {DiscordUtils.Emoji(si.Image)} {si.Name} for {DiscordUtils.Emoji(":moneybag:")} {si.Price()}\n");
+                if (memberHistory.Count > 3)
+                    memberHistory.Dequeue();
+                await _buildShopMessage(g, member.Id).ModifyAsync(e.Message);                
                 return;
             }
             await e.Message.RespondAsync($"{DiscordUtils.Emoji(":warning:")} **Warning** - Can't process purschase");
